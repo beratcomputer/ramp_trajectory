@@ -13,7 +13,6 @@ tReturnTrajectory initTrajectory(tRampTrajectory* trajectory, int32_t interval_t
 }
 
 
-
 static inline float discriminant(float desired_accel, float desired_time, float total_error){
     float needed_t1;
 	float discriminant = desired_time * desired_time - 4 * (total_error/desired_accel);
@@ -26,12 +25,10 @@ static inline float discriminant(float desired_accel, float desired_time, float 
         else {
             needed_t1 = root1;
         }
-        //needed_t2 = desired_time - 2*needed_t1;
     }
     else if (discriminant == 0) {
         float root1 = (desired_time + sqrt(discriminant)) / (2);
         needed_t1 = root1;
-        //needed_t2 = desired_time - 2*needed_t1;
     }
     else {
         return -1;
@@ -39,73 +36,62 @@ static inline float discriminant(float desired_accel, float desired_time, float 
     return needed_t1;
 }
 
-int8_t scenarioCalculator(float* needed_t1, float* needed_t2, float* needed_Vp, float desired_acc, float desired_time, float Vmax, float total_error){
+static tTrajectoryScenario scenarioCalculator(float* needed_t1, float* needed_t2, float* needed_Vp, float desired_acc, float desired_time, float Vmax, float total_error){
 	uint8_t traj_case = (!(desired_acc == 0.0)) << 1 | (!(desired_time == 0.0));
 	float Vp;
-	float acc = desired_acc; 
+	float acc = desired_acc;
 	switch(traj_case){
-		case (0b01):	// sadece time verilmis.
+		case (0b01):	// only TIME is defined
 			if (Vmax*desired_time > total_error){
 				Vp = 2*total_error/desired_time;
 				if(Vp <= Vmax){
 					*needed_t2 = 0;
 					*needed_t1 = desired_time/2;
 					*needed_Vp = Vp;
-					//acc = Vp/needed_t1;
-					printf(" T verilmis TRUE \n");
 					return SCENARIO_CALCULATED;
 				}
 				else{
 					*needed_t1 = desired_time - total_error/Vmax;
 					*needed_t2 = desired_time - 2* (*needed_t1);
 					*needed_Vp = Vmax;
-					//acc = Vmax/needed_t1;
-					printf(" T verilmis SPEED_CHECK FALSE \n");
 					return SCENARIO_CALCULATED;
 				}
 			}
 			else{
-				printf(" T verilmis POSSIBILITY FALSE \n");
 				return NOT_POSSIBLE_TIME_DEFINED;
 			}
 			break;
-		case (0b011):	// ikisi de verilmis.
+		case (0b011):	// TIME and ACCELERATION are defined.
 			*needed_t1 = discriminant(acc, desired_time, total_error);
 			if(*needed_t1 == -1){
-				printf(" T ve ACC verilmis diskrimanant FALSE \n");
 				return NOT_POSSIBLE_ACCEL_TIME_DEFINED;
 			}
 			else{
 				if(Vmax > (*needed_t1) * acc){
 					*needed_t2 = desired_time - 2*(*needed_t1);
 					*needed_Vp = (*needed_t1) * acc;
-					printf(" T ve ACC verilmis TRUE \n");
 					return SCENARIO_CALCULATED;
 				}
 				else{
-					printf(" T ve ACC verilmis SPEED_CHECK FALSE \n");
 					return NOT_POSSIBLE_ACCEL_TIME_DEFINED;
 				}
 			}
 			break;
-		case (0b00): 	// ikisi de verilmemis.
+		case (0b00): 	// BOTH are undefined.
 			acc = Vmax / 2;
-		case (0b10):	// sadece acc verilmis.
-			//needed_t1 = Vmax / acc;
+		case (0b10):	// only ACCELERATION is defined.
 			*needed_t1 = sqrtf(total_error/acc);
 			Vp = acc* (*needed_t1);
 			if(Vp > Vmax){
 				*needed_t1 = Vmax/acc;
 				*needed_t2 = (total_error - Vmax*(*needed_t1))/Vmax;
 				*needed_Vp = Vmax;
-				printf(" sadece acc verilmis SPEED_CHECK FALSE \n");
 				return SCENARIO_CALCULATED;
 			}
 			else{
 				*needed_t2 = 0;
 				*needed_t1 = Vp/acc;
 				*needed_Vp = Vp;
-				printf(" sadece acc verilmis TRUE \n");
 				return SCENARIO_CALCULATED;
 			}
 			break;
@@ -153,7 +139,6 @@ tReturnTrajectory createTrajectory(tRampTrajectory* trajectory, float inital_pos
 	}
 
 	acc = Vp / needed_t1;
-	//Vp =  acc * needed_t1;
 	t1_pos = (Vp*needed_t1)/2;
 
 	trajectory->needed_time = (needed_t1*2 + needed_t2);

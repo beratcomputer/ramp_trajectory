@@ -1,87 +1,88 @@
-# ramp_trajectory
+# Ramp Trajectory Generator
 
-# ramp_trajectory
-Bu kod herhangi bir hareket sisteminde rampa hareket plani olusturmak icin hazirlanmistir.
-- BeratComputer
+**Author:** BeratComputer
 
-rampa trajecotrysindeki degiskenlerin bir birimi yoktur. 
-x(t) , v(t), a(t) olarak ayrilan pzoisyon ve 2 turevi bulunmaktadir. tum degerler birimden bagimsiz oldugundan en bastaki konumun birimi turevlerinin de birimlerini belirlemektedir.
-zaman birimi saniyedir.
+This project provides a simple way to create ramp trajectory plans for any motion system. The variables in the ramp trajectory have no fixed units. The position and its derivatives are defined as `x(t)`, `v(t)`, and `a(t)`, where:
 
-ornegin: 3 saniyede 100 metre ilerlemesini hesaplatmak istiyorsaniz artik x degerinizin birimi metre, v (hiz) biriminizin
-degeri m/s , a(ivme) degerinizin birimi m/s^2 olacaktir.
-### 1.0
+- `x(t)` = Position
+- `v(t)` = Velocity (1st derivative of position)
+- `a(t)` = Acceleration (2nd derivative of position)
 
-bu kodun iki ana fonksiyonu vardir. birisi createTrajectory, digeri ise goWithTrajectory. bu fonksiyonlarin ilki gerekli rampa trajectory sini olusturmak icin verilen girdileri belli kontrollerden gecirerek trajectory olusturur.
-olusturdugu trajectorynin tum karakterini anlatabilecek degerlerin ciktisini verir. 
+All values are unit-independent, meaning the initial unit of position determines the units of velocity and acceleration. The time unit is in **seconds**.
 
-Bir rampa trajectorysini tanimlayan degiskenler:
-### 2.0
-### 3.0
+For example, if you want to calculate the motion of 100 meters over 3 seconds, your position unit becomes meters (`x` in meters), velocity unit becomes meters per second (`v` in m/s), and acceleration unit becomes meters per second squared (`a` in m/s²).
 
+---
 
+## 1. Introduction
 
-goWithTrajectory fonksiyonu ise olusturlan trajectorynin ozelliklerine gore surekli olarak fonksiyona girdigi anda hangi pozisyonda olmasi gerektigini dondurur. bu ikinci fonksiyonu surekli cagirarak verdigi degeri setpoint olarak alinmasi gerekiyor.
-(bu fonksiyon surekli olarak pozisyon vermesinin yani sira surekli olarak hiz da vermesi yararli olabilir.)
+This code offers two main functions:
 
-iki fonksiyonun birlikte olan kullanim sekli blok semasi olarak verilmistir.
-### 4.0
+- **`createTrajectory`**: Generates a trajectory based on user input and provides details about the ramp profile.
+- **`goWithTrajectory`**: Continuously calculates the expected position (and optionally velocity) of the system at any given moment during the trajectory. This function should be called regularly, with the returned value being used as the current setpoint.
 
+Both functions are designed to work together, and a block diagram illustrating their usage is provided below.
 
+### 1.1 Block Diagram of Function Usage
+![Block Diagram](4.0) 
+(it is not available yet!)
+---
 
+## 2. Trajectory Parameters
 
+A ramp trajectory is defined by the following key parameters:
 
-# CreateTrajectory fonksiyonunun ic yapisi:
+1. **Position (`x`)**: The distance to be covered.
+2. **Velocity (`v`)**: The rate of change of position (can have a maximum value).
+3. **Acceleration (`a`)**: The rate of change of velocity.
+4. **Time (`T`)**: The total time duration for the trajectory.
 
-oncelikle girdilerden sadece bazilari ile bile ise yarar bir trajectoryi olusturmasi isteniyor.
-girdilerden Vmax in girilmemesi durumunda sistemin bir hiz limiti kesinlikle olmali. pratikte her turlu hareket sisteminde bir hiz siniri olacagindan bu limit tanimlanmali. 
+*Default Parameters of Ramp Trajectory*
+![a Ramp Trajectory default parameters.](helping_items\ramp_trajectory_parameters.jpg)
 
-- bu durumda Vmax kullanici kullanirken verilmese de sistemin halihazirda bir Vmax i olacagindan Vmax in girilmedigi durum diye bir kontrole ihtiyacimiz yok.
-- bir hareket olusturmak icin hedef pozisyonunun da girilmesi zorunlu oldugundan sadece iki parametrenin girilme ve girilmeme olasiligi olmus oluyor: acc , time
+---
 
-bu iki parametrelerin verilmis ya da verilmemis olmalarindaki kombinasyon sayisi 4 oldugundan teker teker inceleyelim.
+## 3. The `createTrajectory` Function
 
-## ikisi de veririldi ise:
-    burada verilen sureye uyabilmek icin trajectoryde ayarlayabildigimiz tek yer sabit hiz ile ilerledigimiz sure.
-    x = vp.t2 + a.t1^2
-    - buradan t1 ve t2 degerlerini tek bir degiskene dusurulur. t2 = T-2.t1
-    - vp = a.t1
-    x =  a.t1.(T-2.t1) + a.t1^2
-    burada bilinmeyen tek degisken t1 e indirgenince diskriminant ile olasi t1 degerleri cozulur.
-    diskriminant cozumu negatif cikar ise belirlenen surede gitmek mumkun olmadigi cikacaktir.
+This function generates the ramp profile based on the given input values. Depending on which values are provided, it constructs the trajectory by evaluating various conditions. If a maximum velocity (`Vmax`) is not provided, the system assumes a velocity limit, as practical motion systems always have a speed limit. Therefore, there is no need to check for the absence of `Vmax`.
 
-    
+The only necessary input is the target position, but the user may provide additional inputs like acceleration (`a`) and time (`T`). This creates four possible input combinations.
 
-## sadece zaman verildi ise:
-    sabit hiz ile ilerleme suresini mumkun oldugunca azaltmak amaclanmaktadir. bundan dolayi acc degerinin mumkun oldugu kadariyla az belirlemek gerekmektedir.
+![CreateTrajectory Inputs and Outputs](helping_items\createTrajectory_input_output.jpg)
+The outputs describing the motion plan created by the `createTrajectory` function, based on the given inputs, are shown in the figure above.
 
-## sadece acc verildi ise:
-    burada bir zaman ihtiyaci olmadigindan tek uygulanabilir
+### 3.1 Flowchart of `createTrajectory`
+![CreateTrajectory Flowchart](helping_items\createTrajectory_flowchart_v1.png)
 
-## ikisi de verilmedi ise:
-    burada kullanicinin pek bir kriteri olmadigindan Vmax degerine 2 saniyede ulasabilecegi bir acc secilir. 
+### 3.2 Important Calculations
 
+#### Discriminant Calculation
 
+The `createTrajectory` function uses a discriminant formula to solve for `t1` (time for reaching maximum velocity). This discriminant depends on the position (`x`), time (`T`), and acceleration (`a`). The formula for calculating `t1` is derived from these variables.
 
-# BURALARI TEKRAR DUZENLE!!!!!!!!!!
+![Discriminant Formula](6.0 ) *'is not available yet'*
 
-###### icersinden bahsedelim tekrardan
+Once `t1` is calculated, the trajectory can be generated. If the maximum velocity is exceeded, the trajectory cannot be applied. Additionally, if the discriminant is negative, it means the given time and acceleration are insufficient for reaching the target position.
 
-# CreateTrajectory fonksiyonun icerigi.
+The scenarios where the discriminant is used are explained in detail below.
 
+---
 
-oncelikle bir adet dskriminant formulu cozucu kisimi var bu fonksiyonun. bu diskriminant tam olarak t1 koklerini bulmak icin kullaniliyor. Her durumda kullanilamiyor. bu dskriminant formulunun nereden geldigi asagida verilmistir.
+## 4. The `goWithTrajectory` Function
 
-## 5.0    T^2 - 4(x/a)
+The `goWithTrajectory` function returns the current position (and optionally the velocity) at the time it's called. This should be used as the system's setpoint. By regularly calling this function, the system will follow the planned trajectory.
 
-bu cikan diskriminant konuma (x), zamana(T) ve ivmeye(a) baglidir. buradan gerekli t1 degerini bularak trajectory cizilebilir. buradan cikan trajectoryde maximum hiz kontrolu koyulmasi gerekmektedir cunku cikan trajectoryde maksimum hiz geciliyor ise bu trajectorynin uygulanmasi mumkun degildir.
+---
 
-eger diskriminant 0 dan kucuk cikar ise verilen zaman ve verilen ivme degeriyle gitmek mumkun degildir.
-bu diskriminanta girdi olarak verilecek senaryolar hangileri?
+## 5. Summary
 
+This project provides a simple yet flexible way to generate and follow ramp trajectories in motion control systems. By understanding how the `createTrajectory` and `goWithTrajectory` functions work together, you can create a smooth and effective motion plan for your system. 
 
+For further explanation on trajectory calculations and flow, please refer to the flowcharts and formulas provided in the project.
 
-## FLOW CHART of CreateTrajectory
-buraya flow charti koy.
+--- 
 
+*Version 1.0*
+
+---
 
