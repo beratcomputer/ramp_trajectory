@@ -32,3 +32,8 @@ eger diskriminant 0 dan kucuk cikar ise verilen zaman ve verilen ivme degeriyle 
 bu diskriminanta girdi olarak verilecek senaryolar hangileri?
 
 
+
+## FLOW CHART of CreateTrajectory
+buraya flow charti koy.
+
+

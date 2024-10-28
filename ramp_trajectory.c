@@ -6,97 +6,122 @@
  */
 #include "ramp_trajectory.h"
 
+tReturnTrajectory initTrajectory(tRampTrajectory* trajectory, int32_t interval_time, float max_velocity){
+	trajectory->MAX_VELOCITY = max_velocity;
+	//should be added max_accel.
+	trajectory->INTERVAL_TIME = interval_time;
+}
 
-tReturnTrajectory calculateTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos){
+static inline float discriminant(float desired_accel, float desired_time, float total_error){
+    float needed_t1;
+	float discriminant = desired_time * desired_time - 4 * (total_error/desired_accel);
+    if (discriminant > 0) {
+        float root1 = (desired_time + sqrt(discriminant)) / (2);
+        float root2 = (desired_time - sqrt(discriminant)) / (2);
+        if (2*root1 > desired_time){
+            needed_t1 = root2;
+        }
+        else {
+            needed_t1 = root1;
+        }
+        //needed_t2 = desired_time - 2*needed_t1;
+    }
+    else if (discriminant == 0) {
+        float root1 = (desired_time + sqrt(discriminant)) / (2);
+        needed_t1 = root1;
+        //needed_t2 = desired_time - 2*needed_t1;
+    }
+    else {
+        return -1;
+    }
+    return needed_t1;
+}
+
+
+
+tReturnTrajectory createTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos){
 	float needed_t1;		// hizlanana kadar gecen sure.
 	float needed_t2;		// sabit hizda kaldigi sure.
-	float t1_pos;				// hizlanirken aldigi konum.
+	float t1_pos;			// hizlanirken aldigi konum.
 	float Vp;				// cikacagi max hiz.
+    float needed_accel;
 
 	trajectory->initial_pos = inital_pos;
 	trajectory->goal_pos = goal_pos;
 
-	float acc 			= 0;
-	float Vmax 			= 0;
-	float desired_time 	= 0;
-
-	//inital calculations for stepper trajectory value.
+    float desired_time = trajectory->desired_time;
+	float acc  		 =   trajectory->desired_accel;
+	float Vmax 		 = 	 trajectory->desired_maxVelocity;
 	float total_error = trajectory->goal_pos - trajectory->initial_pos;
-
-	desired_time =	trajectory->desired_time;
-	acc  		 = 	trajectory->desired_accel;
-	Vmax 		 = 	trajectory->desired_maxVelocity;
-
-	//float motor_max_speed = 10000; // step per second
 
 	if((Vmax > trajectory->MAX_VELOCITY) || (Vmax == 0.0)){        // Vmax is not true.
 		Vmax = trajectory->MAX_VELOCITY;
 	}
-
 	if(total_error < 0){
 		trajectory->direction = -1;
 		total_error = fabs(total_error);
 	}
 	else trajectory->direction = 1;
 
-	// sadece zaman vermediyse smooth bir sekilde default verilerle gitsin. zaman verirse gidebilecegi max hizda gitsin.
-	// accel and time are not given.
-	if((acc == 0.0) && (desired_time==0.0)){
-		acc = Vmax/2; 	// Since no required parameters are specified, ACC is determined based on MAX RPM.
-	}
-	// just time is given not accel.
-	if((acc==0.0) && (desired_time != 0)) {
-		if (desired_time * Vmax > total_error){
-			// verilen surede gitmek mumkun.
-			acc = total_error / ((desired_time/2) * (desired_time/2));
-					//Vmax check
-			if ((acc * desired_time / 2) <= Vmax){
-				needed_t1 = desired_time / 2;
-				needed_t2 = 0;
+	uint8_t traj_case = (!(acc == 0.0)) << 1 | (!(desired_time == 0.0));
+	switch(traj_case){
+		case (0b01):	// sadece time verilmis.
+			if (Vmax*desired_time > total_error){
+				Vp = 2*total_error/desired_time;
+				if(Vp <= Vmax){
+					needed_t2 = 0;
+					needed_t1 = desired_time/2;
+					acc = Vp/needed_t1;
+					printf(" T verilmis TRUE \n");
+					break;
+				}
+				else{
+					needed_t1 = desired_time - total_error/Vmax;
+					needed_t2 = desired_time - 2*needed_t1;
+					acc = Vmax/needed_t1;
+					printf(" T verilmis SPEED_CHECK FALSE \n");
+					break;
+				}
 			}
 			else{
-				needed_t1 = desired_time - (total_error / Vmax);
-				needed_t2 = desired_time - 2*needed_t1;
-				acc = Vmax / needed_t1;
+				printf(" T verilmis POSSIBILITY FALSE \n");
 			}
-		}
-		else {
-			//verilen surede gitmek mumkun degil. en kisa surede gidecek.
-			return TrajectoryCalculateError;
-		}
+		case (0b011):	// ikisi de verilmis.
+			needed_t1 = discriminant(acc, desired_time, total_error);
+			if(needed_t1 == -1){
+				printf(" T ve ACC verilmis diskrimanant FALSE \n");
+			}
+			else{
+				if(Vmax > needed_t1 * acc){
+					needed_t2 = desired_time - 2*needed_t1;
+					printf(" T ve ACC verilmis TRUE \n");
+					break;
+				}
+				else{
+					printf(" T ve ACC verilmis SPEED_CHECK FALSE \n");
+				}
+			}
+		case (0b00): 	// ikisi de verilmemis.
+			acc = Vmax / 2;
+		case (0b10):	// sadece acc verilmis.
+			//needed_t1 = Vmax / acc;
+			needed_t1 = sqrtf(total_error/acc);
+			Vp = acc*needed_t1;
+			if(Vp > Vmax){
+				needed_t1 = Vmax/acc;
+				needed_t2 = (total_error - Vmax*needed_t1)/Vmax;
+				printf(" sadece acc verilmis SPEED_CHECK FALSE \n");
+			}
+			else{
+				needed_t2 = 0;
+				printf(" sadece acc verilmis TRUE \n");
+			}
+			break;
+		default:
+			break;
 	}
-	else{ // other situations (both given, just accel given)
-		// Calculate Discriminant to find needed times.
-		float discriminant = desired_time * desired_time - 4 * (total_error/acc);
-		if (discriminant > 0) {
-			float root1 = (desired_time + sqrt(discriminant)) / (2);
-			float root2 = (desired_time - sqrt(discriminant)) / (2);
-			if (2*root1 > desired_time){
-				needed_t1 = root2;
-			}
-			else {
-				needed_t1 = root1;
-			}
-			needed_t2 = desired_time - 2*needed_t1;
-		}
-		else if (discriminant == 0) {
-			float root1 = (desired_time + sqrt(discriminant)) / (2);
-			needed_t1 = root1;
-			needed_t2 = desired_time - 2*needed_t1;
-		}
-		else {
-			needed_t1 = sqrt(total_error / acc);
-			needed_t2 = 0;
-		}
-						// Vmax check
-		if (needed_t1*acc > Vmax){
-			needed_t1 = Vmax/acc;
-			needed_t2 = (total_error - needed_t1 * Vmax) / Vmax;
-		}
-	}
-	//these values are absolute
 	Vp =  acc * needed_t1;
-	t1_pos = Vp * needed_t1 / 2;
+	t1_pos = (Vp*needed_t1)/2;
 
 	trajectory->needed_time = (needed_t1*2 + needed_t2);
 	trajectory->needed_t1 = needed_t1;
@@ -105,7 +130,7 @@ tReturnTrajectory calculateTrajectory(tRampTrajectory* trajectory, float inital_
 	trajectory->needed_Vp = Vp;
 	trajectory->needed_t1_pos = t1_pos;
 
-	return TrajectoryCalculated;
+	return TrajectoryTrue;
 }
 
 float goWithTrajectory(tRampTrajectory* trajectory , uint8_t* newTrajectoryHandle){

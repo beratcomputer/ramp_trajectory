@@ -43,7 +43,7 @@ typedef struct{
 	int32_t INTERVAL_TIME; 	// in ms
 }tRampTrajectory;
 
-tReturnTrajectory calculateTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos);
+tReturnTrajectory createTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos);
 float goWithTrajectory(tRampTrajectory* trajectory , uint8_t* newTrajectoryHandle);
 
 #endif /* INC_RAMP_TRAJECTORY_H_ */
