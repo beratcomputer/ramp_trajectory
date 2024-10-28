@@ -17,6 +17,12 @@ typedef enum{
 	TrajectoryTrue = 1,
 }tReturnTrajectory;
 
+typedef enum{
+	NOT_POSSIBLE_ACCEL_TIME_DEFINED = -1,
+	NOT_POSSIBLE_TIME_DEFINED,
+	SCENARIO_CALCULATED,
+}tTrajectoryScenario;
+
 typedef struct{
 	// INPUTS
 	float initial_pos;

@@ -35,9 +35,9 @@ def rampa_grafigi(t1, t2, vp):
     plt.show()
 
 # Girdi değerleri
-t1 = 2  # örneğin 2 saniye
-t2 = 3  # örneğin 3 saniye
-vp = 100  # örneğin 5 m/s
+t1 = 0.31 # örneğin 2 saniye
+t2 = 0  # örneğin 3 saniye
+vp = 63.24  # örneğin 5 m/s
 
 # Rampa grafiğini çiz
 print(f"position = {vp*t1 + vp*t2}")
