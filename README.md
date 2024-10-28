@@ -38,7 +38,7 @@ A ramp trajectory is defined by the following key parameters:
 4. **Time (`T`)**: The total time duration for the trajectory.
 
 *Default Parameters of Ramp Trajectory*
-![a Ramp Trajectory default parameters.](helping_items\ramp_trajectory_parameters.jpg)
+![a Ramp Trajectory default parameters.](helping_items/ramp_trajectory_parameters.jpg)
 
 ---
 
@@ -48,11 +48,11 @@ This function generates the ramp profile based on the given input values. Depend
 
 The only necessary input is the target position, but the user may provide additional inputs like acceleration (`a`) and time (`T`). This creates four possible input combinations.
 
-![CreateTrajectory Inputs and Outputs](helping_items\createTrajectory_input_output.jpg)
+![CreateTrajectory Inputs and Outputs](helping_items/createTrajectory_input_output.jpg)
 The outputs describing the motion plan created by the `createTrajectory` function, based on the given inputs, are shown in the figure above.
 
 ### 3.1 Flowchart of `createTrajectory`
-![CreateTrajectory Flowchart](helping_items\createTrajectory_flowchart_v1.png)
+![CreateTrajectory Flowchart](helping_items/createTrajectory_flowchart_v1.png)
 
 ### 3.2 Important Calculations
 
