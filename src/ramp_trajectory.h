@@ -45,11 +45,13 @@ typedef struct{
 	float setpoints[4000];
 
 	// CONSTANTS
-	float MAX_VELOCITY;		// step count in Interval time
+	float MAX_VELOCITY;
+	float MAX_ACCELERATION;
 	int32_t INTERVAL_TIME; 	// in ms
 }tRampTrajectory;
 
-tReturnTrajectory createTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos);
-float goWithTrajectory(tRampTrajectory* trajectory , uint8_t* newTrajectoryHandle);
+tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, int32_t interval_time, float max_velocity, float max_acceleration);
+tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos);
+float goWithRampTrajectory(tRampTrajectory* trajectory);
 
 #endif /* INC_RAMP_TRAJECTORY_H_ */

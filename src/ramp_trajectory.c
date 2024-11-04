@@ -6,9 +6,9 @@
  */
 #include "ramp_trajectory.h"
 
-tReturnTrajectory initTrajectory(tRampTrajectory* trajectory, int32_t interval_time, float max_velocity){
+tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, int32_t interval_time, float max_velocity, float max_acceleration){
 	trajectory->MAX_VELOCITY = max_velocity;
-	//should be added max_accel.
+	trajectory->MAX_ACCELERATION = max_acceleration;
 	trajectory->INTERVAL_TIME = interval_time;
 }
 
@@ -102,7 +102,7 @@ static tTrajectoryScenario scenarioCalculator(float* needed_t1, float* needed_t2
 
 
 
-tReturnTrajectory createTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos){
+tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos){
 	float needed_t1;		// hizlanana kadar gecen sure.
 	float needed_t2;		// sabit hizda kaldigi sure.
 	float t1_pos;			// hizlanirken aldigi konum.
@@ -119,6 +119,9 @@ tReturnTrajectory createTrajectory(tRampTrajectory* trajectory, float inital_pos
 
 	if((Vmax > trajectory->MAX_VELOCITY) || (Vmax == 0.0)){        // Vmax is not true.
 		Vmax = trajectory->MAX_VELOCITY;
+	}
+	if((acc > trajectory->MAX_ACCELERATION)){
+		acc = trajectory->MAX_ACCELERATION;
 	}
 	if(total_error < 0){
 		trajectory->direction = -1;
@@ -151,7 +154,7 @@ tReturnTrajectory createTrajectory(tRampTrajectory* trajectory, float inital_pos
 	return TrajectoryTrue;
 }
 
-float goWithTrajectory(tRampTrajectory* trajectory , uint8_t* newTrajectoryHandle){
+float goWithRampTrajectory(tRampTrajectory* trajectory){
 	static float time_counter = 0; //saniye cinsinden tutar.
 	static int i_sp = 0;
 	float setpoint = 0;
@@ -195,11 +198,15 @@ float goWithTrajectory(tRampTrajectory* trajectory , uint8_t* newTrajectoryHandl
 		setpoint = trajectory->goal_pos;
 	}
 
+	trajectory->trajectory_index += trajectory->TIME_INTERVAL; //keeps in ms.
+
+	/*
 	trajectory->setpoints[i_sp] = setpoint;
 	i_sp++;
 	if(i_sp >= 3999){
 		i_sp = 0;
 	}
+	*/
 
 	return setpoint;
 }
