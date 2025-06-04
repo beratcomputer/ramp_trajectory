@@ -1,3 +1,4 @@
+
 /*
  * ramp_trajectory.h
  *
@@ -41,16 +42,16 @@ typedef struct{
 	float needed_accel;
 	int8_t direction;
 
-	uint32_t trajectory_index;
+	float trajectory_time;
 	float setpoints[4000];
 
 	// CONSTANTS
 	float MAX_VELOCITY;
 	float MAX_ACCELERATION;
-	int32_t INTERVAL_TIME; 	// in ms
+	float INTERVAL_TIME; 	// in seconds
 }tRampTrajectory;
 
-tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, int32_t interval_time, float max_velocity, float max_acceleration);
+tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, float interval_time, float max_velocity, float max_acceleration);
 tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos);
 float goWithRampTrajectory(tRampTrajectory* trajectory);
 

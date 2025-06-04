@@ -6,10 +6,14 @@
  */
 #include "ramp_trajectory.h"
 
-tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, int32_t interval_time, float max_velocity, float max_acceleration){
+tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, float interval_time, float max_velocity, float max_acceleration){
+	trajectory->trajectory_time = 0;
+
 	trajectory->MAX_VELOCITY = max_velocity;
 	trajectory->MAX_ACCELERATION = max_acceleration;
 	trajectory->INTERVAL_TIME = interval_time;
+
+	return TrajectoryTrue;
 }
 
 
@@ -98,6 +102,7 @@ static tTrajectoryScenario scenarioCalculator(float* needed_t1, float* needed_t2
 		default:
 			break;
 	}
+	return NOT_POSSIBLE_TIME_DEFINED;
 }
 
 
@@ -107,7 +112,6 @@ tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital
 	float needed_t2;		// sabit hizda kaldigi sure.
 	float t1_pos;			// hizlanirken aldigi konum.
 	float Vp;				// cikacagi max hiz.
-    float needed_accel;
 
 	trajectory->initial_pos = inital_pos;
 	trajectory->goal_pos = goal_pos;
@@ -138,6 +142,8 @@ tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital
 			case NOT_POSSIBLE_TIME_DEFINED:
 				scenarioCalculator(&needed_t1, &needed_t2, &Vp, 0.0 , 0.0 , Vmax, total_error);
 				break;
+			default:
+				break;
 		}
 	}
 
@@ -150,40 +156,26 @@ tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital
 	trajectory->needed_accel = acc;
 	trajectory->needed_Vp = Vp;
 	trajectory->needed_t1_pos = t1_pos;
-
+	trajectory->trajectory_time = 0.0;
 	return TrajectoryTrue;
 }
 
 float goWithRampTrajectory(tRampTrajectory* trajectory){
-	static float time_counter = 0; //saniye cinsinden tutar.
-	static int i_sp = 0;
-	float setpoint = 0;
-
-	float needed_t1 = 	trajectory->needed_t1;
-	float needed_t2 = 	trajectory->needed_t2;
-	float needed_time = trajectory->needed_time;
-	float t1_pos = 		trajectory->needed_t1_pos;
-	float acc = 		trajectory->needed_accel;
-	int8_t direction = 	trajectory->direction;
-	float Vp = 			trajectory->needed_Vp;
+	static float setpoint = 0;
 
 	/////////////////// CONTROL OUTPUT set position //////////////////////
-	//her 10 ms de bir bu fonksiyona giriyor.
-	// yeni trajectory olustu ise
 
-	time_counter = (float)trajectory->trajectory_index * 0.001;
-
-	if(time_counter < needed_t1){
+	if(trajectory->trajectory_time < trajectory->needed_t1){
 		// needed_t1 / speed up
-		setpoint = trajectory->initial_pos + (time_counter * time_counter * acc / 2) * direction;
+		setpoint = trajectory->initial_pos + (trajectory->trajectory_time * trajectory->trajectory_time * trajectory->needed_accel / 2) * trajectory->direction;
 	}
-	else if(time_counter < needed_t1 + needed_t2){
+	else if(trajectory->trajectory_time < trajectory->needed_t1 + trajectory->needed_t2){
 		// needed_t2 / constant velocity
-		setpoint = trajectory->initial_pos + (t1_pos + Vp * (time_counter - needed_t1)) * direction;
+		setpoint = trajectory->initial_pos + (trajectory->needed_t1_pos + trajectory->needed_Vp * (trajectory->trajectory_time - trajectory->needed_t1)) * trajectory->direction;
 	}
-	else if(time_counter < needed_t1 + needed_t2 + needed_t1){
+	else if(trajectory->trajectory_time < trajectory->needed_t1 + trajectory->needed_t2 + trajectory->needed_t1){
 		// needed_t1 / slow down
-		setpoint = trajectory->goal_pos - acc*(needed_time - time_counter)*(needed_time - time_counter)/2*direction;
+		setpoint = trajectory->goal_pos - trajectory->needed_accel*(trajectory->needed_time - trajectory->trajectory_time)*(trajectory->needed_time - trajectory->trajectory_time)/2*trajectory->direction;
 	}
 	else{
 		// end.
@@ -191,22 +183,13 @@ float goWithRampTrajectory(tRampTrajectory* trajectory){
 	}
 
 	//Check Target position limit.
-	if((direction > 0) && (setpoint > trajectory->goal_pos)){
+	if((trajectory->direction > 0) && (setpoint > trajectory->goal_pos)){
 		setpoint = trajectory->goal_pos;
 	}
-	else if((direction < 0) && (setpoint < trajectory->goal_pos)){
+	else if((trajectory->direction < 0) && (setpoint < trajectory->goal_pos)){
 		setpoint = trajectory->goal_pos;
 	}
 
-	trajectory->trajectory_index += trajectory->TIME_INTERVAL; //keeps in ms.
-
-	/*
-	trajectory->setpoints[i_sp] = setpoint;
-	i_sp++;
-	if(i_sp >= 3999){
-		i_sp = 0;
-	}
-	*/
-
+	trajectory->trajectory_time += trajectory->INTERVAL_TIME; //keeps in ms.
 	return setpoint;
 }
