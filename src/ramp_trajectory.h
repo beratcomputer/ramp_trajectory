@@ -46,12 +46,12 @@ typedef struct{
 	float setpoints[4000];
 
 	// CONSTANTS
-	float MAX_VELOCITY;
-	float MAX_ACCELERATION;
-	float INTERVAL_TIME; 	// in seconds
+	float* MAX_VELOCITY;			// pointer for update in main side.
+	float* MAX_ACCELERATION;		// pointer for update in main side.
+	float INTERVAL_TIME; 			// in seconds. default since init.
 }tRampTrajectory;
 
-tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, float interval_time, float max_velocity, float max_acceleration);
+tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, float interval_time, float* max_velocity, float* max_acceleration);
 tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital_pos, float goal_pos);
 float goWithRampTrajectory(tRampTrajectory* trajectory);
 

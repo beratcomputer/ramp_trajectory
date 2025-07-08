@@ -6,7 +6,7 @@
  */
 #include "ramp_trajectory.h"
 
-tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, float interval_time, float max_velocity, float max_acceleration){
+tReturnTrajectory initRampTrajectory(tRampTrajectory* trajectory, float interval_time, float* max_velocity, float* max_acceleration){
 	trajectory->trajectory_time = 0;
 
 	trajectory->MAX_VELOCITY = max_velocity;
@@ -121,12 +121,13 @@ tReturnTrajectory createRampTrajectory(tRampTrajectory* trajectory, float inital
 	float Vmax 		 = 	 trajectory->desired_maxVelocity;
 	float total_error = trajectory->goal_pos - trajectory->initial_pos;
 
-	if((Vmax > trajectory->MAX_VELOCITY) || (Vmax == 0.0)){        // Vmax is not true.
-		Vmax = trajectory->MAX_VELOCITY;
+	if((Vmax > *trajectory->MAX_VELOCITY) || (Vmax == 0.0)){        // Vmax is not true.
+		Vmax = *trajectory->MAX_VELOCITY;
 	}
-	if((acc > trajectory->MAX_ACCELERATION)){
-		acc = trajectory->MAX_ACCELERATION;
+	if((acc > *trajectory->MAX_ACCELERATION)||(acc == 0.0)){
+		acc = *trajectory->MAX_ACCELERATION;
 	}
+
 	if(total_error < 0){
 		trajectory->direction = -1;
 		total_error = fabs(total_error);
